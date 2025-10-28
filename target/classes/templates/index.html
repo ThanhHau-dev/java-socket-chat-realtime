@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Đăng nhập</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+        
+        .login-container h1 { color: #333; margin-bottom: 30px; font-size: 28px; }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+        
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; color: #555; font-weight: 500; }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 15px;
+        }
+        .btn-login:hover { transform: translateY(-2px); }
+        
+        .demo-login {
+            width: 100%;
+            padding: 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .demo-login:hover { transform: translateY(-2px); }
+        
+        .demo-users {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .demo-users h3 { color: #333; margin-bottom: 10px; font-size: 14px; }
+        .demo-users p {
+            color: #666; font-size: 12px; margin: 5px 0; cursor: pointer;
+            padding: 5px; border-radius: 3px; transition: background 0.2s;
+        }
+        .demo-users p:hover { background: #e9ecef; }
+        .demo-users p strong { color: #667eea; }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .test-link {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 5px;
+        }
+        .test-link a { color: #2e7d32; text-decoration: none; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>💬 Chat App</h1>
+        
+        <div th:if="${error}" class="error-message" th:text="${error}"></div>
+        <div th:if="${success}" class="success-message" th:text="${success}"></div>
+        
+        <!-- Form đăng nhập thực -->
+        <form action="/login" method="post">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập:</label>
+                <input type="text" id="username" name="username" required 
+                       placeholder="Nhập tên đăng nhập" th:value="${username}">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Mật khẩu:</label>
+                <input type="password" id="password" name="password" required 
+                       placeholder="Nhập mật khẩu">
+            </div>
+            
+            <button type="submit" class="btn-login">Đăng nhập 🚀</button>
+        </form>
+        
+        <!-- Demo login nhanh -->
+        <button type="button" class="demo-login" onclick="demoLogin()">
+            Demo Login (admin) ⚡
+        </button>
+        
+        <div class="demo-users">
+            <h3>👤 Tài khoản demo:</h3>
+            <p onclick="setUsername('admin')"><strong>admin</strong> - Administrator</p>
+            <p onclick="setUsername('user1')"><strong>user1</strong> - Người dùng 1</p>
+            <p onclick="setUsername('user2')"><strong>user2</strong> - Người dùng 2</p>
+            <p style="color: #999; font-style: italic;">Password: password</p>
+        </div>
+
+        <div class="register-link">
+            <p>Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
+        </div>
+
+        <div class="test-link">
+            <a href="/test">🔧 Test Database Connection</a>
+        </div>
+    </div>
+
+    <script>
+        function setUsername(username) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = 'password';
+        }
+        
+        function demoLogin() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'password';
+            document.querySelector('form').submit();
+        }
+    </script>
+</body>
+</html>

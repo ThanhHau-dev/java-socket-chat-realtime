@@ -14,8 +14,13 @@ public class ChatMessage {
     private LocalDateTime timestamp;
 
     public enum MessageType {
-        CHAT, JOIN, LEAVE, TYPING
+        CHAT, JOIN, LEAVE, TYPING, FILE
     }
+
+    // File-related fields
+    private String fileName;
+    private String fileOriginalName;
+    private boolean isImage;
 
     // Constructors
     public ChatMessage() {
@@ -47,4 +52,13 @@ public class ChatMessage {
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
+
+    public String getFileOriginalName() { return fileOriginalName; }
+    public void setFileOriginalName(String fileOriginalName) { this.fileOriginalName = fileOriginalName; }
+
+    public boolean isImage() { return isImage; }
+    public void setImage(boolean isImage) { this.isImage = isImage; }
 }

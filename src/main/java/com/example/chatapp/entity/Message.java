@@ -1,7 +1,15 @@
 package com.example.chatapp.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * Entity đại diện cho tin nhắn trong chat
@@ -28,6 +36,12 @@ public class Message {
     
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_original_name")
+    private String fileOriginalName;
     
     public enum MessageType {
         text, image, file
@@ -63,4 +77,21 @@ public class Message {
     
     public LocalDateTime getSentAt() { return sentAt; }
     public void setSentAt(LocalDateTime sentAt) { this.sentAt = sentAt; }
+
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
+
+    public String getFileOriginalName() { return fileOriginalName; }
+    public void setFileOriginalName(String fileOriginalName) { this.fileOriginalName = fileOriginalName; }
+
+    public Boolean getIsImage() { 
+        return messageType == MessageType.image;
+    }
+    public void setIsImage(Boolean isImage) {
+        if (isImage) {
+            this.messageType = MessageType.image;
+        } else {
+            this.messageType = MessageType.file;
+        }
+    }
 }

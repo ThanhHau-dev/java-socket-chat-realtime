@@ -1,13 +1,14 @@
 package com.example.chatapp.controller;
 
-import com.example.chatapp.dto.ChatMessage;
-import com.example.chatapp.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import com.example.chatapp.dto.ChatMessage;
+import com.example.chatapp.service.ChatService;
 
 /**
  * Controller xử lý các message WebSocket cho chat
@@ -42,9 +43,21 @@ public class ChatController {
     @MessageMapping("/chat.addUser")
     public void addUser(@Payload ChatMessage chatMessage,
                        SimpMessageHeaderAccessor headerAccessor) {
-        // Lưu username vào session
-        headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
-        headerAccessor.getSessionAttributes().put("roomId", chatMessage.getRoomId());
+        // Guard against malformed payloads
+        if (chatMessage == null || chatMessage.getSender() == null || chatMessage.getRoomId() == null) {
+            // If essential data is missing, ignore the join request
+            return;
+        }
+
+        // Lưu username vào session (headerAccessor.getSessionAttributes() may be null)
+        java.util.Map<String, Object> sessionAttrs = headerAccessor.getSessionAttributes();
+        if (sessionAttrs == null) {
+            sessionAttrs = new java.util.HashMap<>();
+            headerAccessor.setSessionAttributes(sessionAttrs);
+        }
+
+        sessionAttrs.put("username", chatMessage.getSender());
+        sessionAttrs.put("roomId", chatMessage.getRoomId());
         
         // Cập nhật status user online
         chatService.updateUserStatus(chatMessage.getSender(), "online");

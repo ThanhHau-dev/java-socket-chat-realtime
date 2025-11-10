@@ -2,6 +2,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat App</title>
     <style>
@@ -185,6 +186,48 @@
             cursor: not-allowed;
         }
 
+        .attach-button {
+            width: 45px;
+            height: 45px;
+            background: #f0f2f5;
+            color: #2481cc;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            font-size: 20px;
+        }
+
+        .attach-button:hover {
+            background: #e4e6e9;
+        }
+
+        .message-file {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
+        .message-file a {
+            color: #2481cc;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .message-file img {
+            max-width: 200px;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
         .connection-status {
             padding: 10px 20px;
             text-align: center;
@@ -300,13 +343,17 @@
                         User #<span th:text="${message.senderId}">Sender</span>
                     </div>
                     <div class="message-text" th:text="${message.content}">Message content</div>
-                    <div class="message-time" th:text="${#temporals.format(message.sentAt, 'dd/MM HH:mm')}">Time</div>
+                    <div class="message-time" th:if="${message.sentAt != null}" th:text="${#temporals.format(message.sentAt, 'dd/MM HH:mm')}">Time</div>
                 </div>
             </div>
         </div>
 
         <div class="input-container">
             <form class="input-form" id="messageForm">
+                <input type="file" id="fileInput" style="display: none" onchange="handleFileSelect(event)">
+                <button type="button" class="attach-button" onclick="document.getElementById('fileInput').click()">
+                    <span>📎</span>
+                </button>
                 <input type="text" 
                        class="message-input" 
                        id="messageInput" 
@@ -429,6 +476,50 @@
             }
         }
 
+        // Upload file
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', userId);
+            formData.append('roomId', currentRoomId);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const messageData = await response.json();
+                    
+                    // Send the file message through WebSocket
+                    const chatMessage = {
+                        sender: username,
+                        senderName: fullName,
+                        content: messageData.fileName, // Store the saved filename
+                        type: 'FILE',
+                        roomId: currentRoomId,
+                        fileOriginalName: messageData.fileOriginalName,
+                        isImage: messageData.isImage
+                    };
+                    
+                    stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+                } else {
+                    console.error('Upload failed:', response.statusText);
+                    alert('Upload thất bại: ' + response.statusText);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload thất bại: ' + error.message);
+            }
+
+            // Clear the file input
+            event.target.value = '';
+        }
+
         // Hiển thị tin nhắn
         function showMessage(message) {
             const messagesContainer = document.getElementById('messagesContainer');
@@ -454,10 +545,33 @@
                 const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
                                  now.getMinutes().toString().padStart(2, '0');
                 
+                let contentHtml = '';
+                if (message.type === 'FILE') {
+                    if (message.isImage) {
+                        contentHtml = `
+                            <div class="message-file">
+                                <a href="/files/${escapeHtml(message.content)}" target="_blank">
+                                    <img src="/files/${escapeHtml(message.content)}" alt="${escapeHtml(message.fileOriginalName)}">
+                                </a>
+                            </div>
+                        `;
+                    } else {
+                        contentHtml = `
+                            <div class="message-file">
+                                <a href="/files/${escapeHtml(message.content)}" target="_blank">
+                                    📄 ${escapeHtml(message.fileOriginalName)}
+                                </a>
+                            </div>
+                        `;
+                    }
+                } else {
+                    contentHtml = `<div class="message-text">${escapeHtml(message.content)}</div>`;
+                }
+                
                 messageElement.innerHTML = `
                     <div class="message-content">
                         ${message.sender !== username ? '<div class="message-sender">' + message.senderName + '</div>' : ''}
-                        <div class="message-text">${escapeHtml(message.content)}</div>
+                        ${contentHtml}
                         <div class="message-time">${timeString}</div>
                     </div>
                 `;

@@ -1,22 +1,34 @@
 package com.example.chatapp.controller;
 
-import com.example.chatapp.entity.User;
-import com.example.chatapp.entity.ChatRoom;
-import com.example.chatapp.entity.Message;
-import com.example.chatapp.repository.UserRepository;
-import com.example.chatapp.repository.ChatRoomRepository;
-import com.example.chatapp.repository.MessageRepository;
-import com.example.chatapp.service.UserService;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.ArrayList;
+import com.example.chatapp.entity.ChatRoom;
+import com.example.chatapp.entity.Message;
+import com.example.chatapp.entity.User;
+import com.example.chatapp.repository.ChatRoomRepository;
+import com.example.chatapp.repository.MessageRepository;
+import com.example.chatapp.repository.UserRepository;
+import com.example.chatapp.service.FileService;
+import com.example.chatapp.service.UserService;
 
 /**
  * Controller xử lý các request HTTP cho giao diện web
@@ -35,6 +47,9 @@ public class WebController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FileService fileService;
 
     /**
      * Trang chủ - hiển thị form đăng nhập
@@ -194,6 +209,71 @@ public class WebController {
             System.out.println("EXCEPTION in createPrivateChat: " + e.getMessage());
             e.printStackTrace();
             return "redirect:/chat?username=" + username + "&error=exception";
+        }
+    }
+
+    /**
+     * API upload file
+     */
+    @PostMapping("/api/upload")
+    @ResponseBody
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file,
+                                      @RequestParam("userId") Long userId,
+                                      @RequestParam("roomId") Long roomId) {
+        try {
+            String savedFileName = fileService.saveFile(file);
+            
+            // Create message with file attachment
+            Message message = new Message();
+            message.setSenderId(userId);
+            message.setRoomId(roomId);
+            message.setFileName(savedFileName);
+            message.setFileOriginalName(file.getOriginalFilename());
+            message.setIsImage(fileService.isImage(file.getOriginalFilename()));
+            // Ensure content is not null (DB column is NOT NULL). Use original filename as content for file messages.
+            message.setContent(file.getOriginalFilename() != null ? file.getOriginalFilename() : "");
+            
+            messageRepository.save(message);
+            
+            return ResponseEntity.ok().body(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Failed to upload file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * API download/view file
+     */
+    @GetMapping("/files/{filename:.+}")
+    @ResponseBody
+    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+        try {
+            Path filePath = fileService.getFilePath(filename);
+            Resource resource = new UrlResource(filePath.toUri());
+            
+            if (resource.exists() || resource.isReadable()) {
+                HttpHeaders headers = new HttpHeaders();
+                
+                // If it's an image, display it in browser
+                if (fileService.isImage(filename)) {
+                    headers.setContentType(MediaType.IMAGE_JPEG);
+                } else {
+                    // For other files, download them
+                    headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+                    headers.setContentDisposition(ContentDisposition.attachment()
+                            .filename(filename)
+                            .build());
+                }
+                
+                return ResponseEntity.ok()
+                        .headers(headers)
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 }

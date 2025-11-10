@@ -49,6 +49,8 @@ CREATE TABLE messages (
     content TEXT NOT NULL,
     message_type ENUM('text', 'image', 'file') DEFAULT 'text',
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    file_name VARCHAR(255),
+    file_original_name VARCHAR(255),
     FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
